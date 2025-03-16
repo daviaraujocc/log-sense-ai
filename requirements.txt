@@ -1,0 +1,10 @@
+outlines==0.0.46
+outlines-core==0.1.14
+pydantic==2.10.6
+reportlab==4.3.1
+Requests==2.32.3
+torch==2.4.0
+transformers==4.46.2
+Jinja2==3.1.4
+starlette==0.41.2
+rich==13.10.0
