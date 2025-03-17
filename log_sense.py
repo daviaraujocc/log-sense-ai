@@ -4,7 +4,8 @@ from typing import Optional, Dict, List
 from enum import Enum
 import hashlib
 from rich.console import Console
-
+from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
+import os
 
 def format_logs_with_id(log_entries):
     """Format log entries with LogID prefixes and return formatted logs along with ID mapping."""
@@ -125,15 +126,14 @@ class LOGSENSE:
         self.generator = outlines.generate.json(
             self.model,
             LogAnalysis,
-            sampler=outlines.samplers.greedy(),
+            sampler=outlines.samplers.greedy()
         )
         self.console = Console()
 
     
         if prompt_template_path is None:
             prompt_template_path = "prompt.txt"
-            
-       
+
         with open(prompt_template_path, "r") as file:
             self.prompt_template = file.read()
 
@@ -149,35 +149,49 @@ class LOGSENSE:
         Returns:
             AnalysisResults: Object containing analysis results and metadata
         """
+
         results = []
         
         # Apply limit if specified
         if limit is not None and limit < len(logs):
             logs = logs[:limit]
+        
+        total_batches = (len(logs) + chunk_size - 1) // chunk_size
+        
+        with Progress(
+            TextColumn("[blue]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("({task.completed}/{task.total})"),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+        ) as progress:
+            task = progress.add_task(f"Analyzing logs", total=total_batches)
             
-        for i in range(0, len(logs), chunk_size):
-            chunk = logs[i:i + chunk_size]
-            formatted_logs = format_logs_with_id(chunk)
+            for i in range(0, len(logs), chunk_size):
+                chunk = logs[i:i + chunk_size]
+                formatted_logs = format_logs_with_id(chunk)
 
-            formatted_logs = "\n\n".join(formatted_logs)
+                formatted_logs = "\n\n".join(formatted_logs)
 
-            prompt = self._to_prompt(formatted_logs, LogAnalysis)
+                prompt = self._to_prompt(formatted_logs, LogAnalysis)
 
-            self.console.print(f"Analyzing log batch {i//chunk_size + 1}...", style="blue")
-            try:
-                resp = self.generator(prompt, max_tokens=self.token_max)
+                try:
+                    resp = self.generator(prompt, max_tokens=self.token_max)
+                    
+                    # Set start and end line directly on the model fields
+                    resp.start_line = i
+                    resp.end_line = min(i + chunk_size - 1, len(logs) - 1)
+                    results.append(resp)
+                except ValidationError as ve:
+                    self.console.print(f"Pydantic validation error for batch starting at line {i}: {str(ve)}", style="bold red")
+                    results.append(None)  
+                except Exception as e:
+                    self.console.print(f"Generation failed for batch starting at line {i}: {str(e)}", style="bold red")
+                    self.console.print("Exiting...", style="bold red")
+                    os._exit(1)
                 
-                # Set start and end line directly on the model fields
-                resp.start_line = i
-                resp.end_line = min(i + chunk_size - 1, len(logs) - 1)
-                results.append(resp)
-            except ValidationError as ve:
-                print(f"Pydantic validation error for batch starting at line {i}: {str(ve)}")
-                results.append(None)  # Append None to maintain batch position integrity
-            except Exception as e:
-                print(f"Generation failed for batch starting at line {i}: {str(e)}")
-                results.append(None)  # Append None to maintain batch position integrity
-           
+                progress.update(task, advance=1)
         
         return AnalysisResults(
             results=results,
