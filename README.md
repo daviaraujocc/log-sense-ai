@@ -3,9 +3,9 @@
 
 ## About
 
-LOG-SENSE is a Proof-Of-Concept (POC) of AI-powered log analysis system designed to identify potential security issues, service errors, and performance problems in infrastructure logs. The system leverages structured generation techniques using [Outlines](https://github.com/dottxt-ai/outlines) and [Pydantic](https://docs.pydantic.dev/latest) to ensure consistent, strongly-typed output.
+LOG-SENSE is a Proof-of-Concept (POC) AI-powered log analysis system designed to identify potential security issues, service errors, and performance problems in infrastructure logs. The system leverages structured generation techniques using Outlines (https://github.com/dottxt-ai/outlines) and Pydantic (https://docs.pydantic.dev/latest) to ensure consistent, strongly-typed output. 
 
-LOG-SENSE processes arbitrary logs in chunks, generating a comprehensive analysis including severity assessment, potential security issues, and recommended actions for each identified event.
+The system works by processing log files in manageable chunks, analyzing them using LLM models according to a prompt template, and generating structured JSON output based on a Pydantic schema. LOG-SENSE identifies potential security threats, performance bottlenecks, and system errors, categorizing them by severity levels and providing recommended actions for remediation, it's also capable of generating both console reports and PDF documentation for easy sharing and archiving.
 
 ## Features
 
@@ -64,7 +64,7 @@ python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log
 
 - **Model Configuration**:
   - `--model`, `-m`: Model to use for analysis (default: "Qwen/Qwen2.5-7B-Instruct")
-  - `--log-type`: Type of log being analyzed (default: "server")
+  - `--log-type`: Type of log being analyzed for LLM context (default: "server")
   - `--token-max`: Maximum token context size for processing (default: 32000)
   - `--gpu-mem-util`: GPU memory utilization (0.0 to 1.0) (default: 0.95)
   - `--max-model-len`: Maximum model length (optional)
