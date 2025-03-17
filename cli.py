@@ -7,7 +7,7 @@ import argparse
 import os
 import sys
 import outlines
-import torch
+import json
 from transformers import AutoTokenizer
 from log_sense import LOGSENSE
 from utils import generate_report, generate_console_report
@@ -80,8 +80,8 @@ def main():
     # Output configuration
     output_group = parser.add_argument_group("Output Configuration")
     output_group.add_argument(
-        "--output",
-        choices=["console", "pdf"],
+        "--format", 
+        choices=["console", "pdf", "json"],
         default="console",
         help="Output format for the analysis results"
     )
@@ -93,14 +93,14 @@ def main():
         help="Severity levels to include in reports"
     )
     output_group.add_argument(
-        "--output-dir",
+        "--output", "-o",
         default="reports",
-        help="Directory to save PDF reports"
+        help="Output location for PDF or JSON files (directory or full path)"
     )
     output_group.add_argument(
-        "--filename",
+        "--filename", "-f",
         default=None,
-        help="Filename for the PDF report (default: <log_file>_report.pdf)"
+        help="Filename for the output report (default: <log_file>_report.<ext>)"
     )
     
     args = parser.parse_args()
@@ -110,21 +110,47 @@ def main():
         print(f"Error: Log file '{args.log_file}' not found.")
         sys.exit(1)
     
-    # Determine PDF filename if not specified
-    if args.output == "pdf" and not args.filename:
+    # Determine output path
+    output_file_path = None
+    if args.format != "console":
         base_name = os.path.basename(args.log_file)
-        args.filename = f"{os.path.splitext(base_name)[0]}_report.pdf"
-    
-    # Create output directory if it doesn't exist
-    if args.output == "pdf":
-        os.makedirs(args.output_dir, exist_ok=True)
+        base_filename = os.path.splitext(base_name)[0]
+        
+        # Check if output is a directory or full path
+        output_path = args.output
+        
+        # If output is a directory or doesn't have the right extension, use default filename
+        if os.path.isdir(output_path) or not output_path.endswith(f".{args.format}"):
+            # Create directory if it doesn't exist
+            os.makedirs(output_path, exist_ok=True)
+            
+            # Use provided filename or default to log filename + format
+            if args.filename:
+                filename = args.filename
+                # Ensure filename has the right extension
+                if not filename.endswith(f".{args.format}"):
+                    filename = f"{os.path.splitext(filename)[0]}.{args.format}"
+            else:
+                filename = f"{base_filename}_report.{args.format}"
+                
+            output_file_path = os.path.join(output_path, filename)
+        else:
+            # Output is a full path with filename
+            output_dir = os.path.dirname(output_path)
+            if output_dir:  # Skip if output_dir is empty (current dir)
+                os.makedirs(output_dir, exist_ok=True)
+            output_file_path = output_path
     
     # Load logs
     try:
         print(f"Loading logs from {args.log_file}...")
-        with open(args.log_file, "r", encoding="latin-1") as file:
+        with open(args.log_file, "r", encoding="ISO-8859-1") as file:
             logs = file.readlines()
-        print(f"Loaded {len(logs)} log lines.")
+        if args.limit is not None:
+            logs = logs[:args.limit]
+            print(f"Loaded {len(logs)} log lines (limited by --limit={args.limit}).")
+        else:
+            print(f"Loaded {len(logs)} log lines.")
     except Exception as e:
         print(f"Error loading log file: {str(e)}")
         sys.exit(1)
@@ -178,7 +204,7 @@ def main():
         )
         
         # Generate appropriate output
-        if args.output == "console":
+        if args.format == "console":
             print("Generating console report...")
             generate_console_report(
                 results,
@@ -186,16 +212,66 @@ def main():
                 severity_levels=args.severity
             )
         
-        elif args.output == "pdf":
+        elif args.format == "pdf":
             print("Generating PDF report...")
             pdf_path = generate_report(
                 results,
-                output_path=args.output_dir,
-                filename=args.filename,
+                output_path=os.path.dirname(output_file_path) or ".",
+                filename=os.path.basename(output_file_path),
                 severity_levels=args.severity,
                 logs=logs
             )
             print(f"PDF report generated at: {pdf_path}")
+        
+        elif args.format == "json":
+            print("Generating JSON output...")
+            
+            # Access the results properly based on the class structure
+            # Determine whether results is an AnalysisResults object or a list
+            if hasattr(results, 'results'):
+                # If results is an AnalysisResults object
+                analysis_results = results.results
+                source_file = results.source_filename or args.log_file
+                log_type = results.log_type
+            else:
+                # If results is a list of LogAnalysis objects
+                analysis_results = results
+                source_file = args.log_file
+                log_type = args.log_type
+            
+            # Filter by severity levels
+            filtered_results = []
+            for r in analysis_results:
+                if r and r.highest_severity and r.highest_severity.lower() in args.severity:
+                    filtered_results.append(r)
+            
+            # Convert LogAnalysis objects to dictionaries for JSON
+            json_findings = []
+            for r in filtered_results:
+                # Convert each LogAnalysis to a dictionary
+                finding = {
+                    "severity": r.highest_severity,
+                    "requires_attention": r.requires_immediate_attention,
+                    "observations": r.observations,
+                    "events": [event.model_dump() for event in r.events],
+                    "start_line": r.start_line,
+                    "end_line": r.end_line
+                }
+                json_findings.append(finding)
+            
+            # Create JSON-compatible structure
+            json_output = {
+                "source_file": source_file,
+                "log_type": log_type,
+                "total_findings": len(filtered_results),
+                "findings": json_findings
+            }
+            
+            # Save to file
+            with open(output_file_path, 'w', encoding='utf-8') as f:
+                json.dump(json_output, f)
+            
+            print(f"JSON output generated at: {output_file_path}")
     
     except Exception as e:
         print(f"Error during analysis: {str(e)}")
