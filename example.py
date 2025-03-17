@@ -1,20 +1,19 @@
-# A tool for analyzing Linux server logs using AI to identify issues and generate reports
-
 import outlines
 import torch
 from transformers import AutoTokenizer
 import json
 import os
 
-from log_sense import LOGSENSE, generate_report, generate_console_report
+from log_sense import LOGSENSE
+from utils import generate_report, generate_console_report
 
 # The model we're using
-#model_name = "microsoft/Phi-3-mini-4k-instruct"
 model_name = "Qwen/Qwen2.5-7B-Instruct"
 
 # The type of logs we're analyzing
 log_type = "linux server"
 
+# Load the tokenizer for the model
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Setting up the AI model
@@ -32,9 +31,6 @@ model = outlines.models.vllm(
     
     # Use most of the available GPU memory
     gpu_memory_utilization=0.95,
-    
-    # Maximum model length for less memory footprint, if you have more VRAM then you can comment this value
-    max_model_len=10400,
     
     # Disable CUDA Graph for less resource usage
     enforce_eager=True,
@@ -65,22 +61,27 @@ try:
     
     # Analyze the logs
     results = logs_analyzer.analyze_logs(logs,
-                                         # Process 10 log lines at a time
+                                         # Process 20 log lines at a time
                                          chunk_size=20,
                                          # Limit to 30 chunks for this example
-                                         limit=20,
+                                         limit=100,
                                          source_filename=log_path)
     
     
     # Generate a console report with the most important findings
-    generate_console_report(results, logs, severity_levels=["critical", "error", "warning"])
+    generate_console_report(results, 
+                            logs, 
+                            severity_levels=["critical", "error", "warning"]
+                            )
     
     # Generate a PDF summary with all the findings organized by severity
     pdf_path = generate_report(results,
         output_path="reports",
         filename="report.pdf",
+
         # Focus on the most important issues
         severity_levels=["critical", "error", "warning"],
+        # Include the original logs in the report to retrieve context
         logs=logs
     )
 

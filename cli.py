@@ -9,7 +9,8 @@ import sys
 import outlines
 import torch
 from transformers import AutoTokenizer
-from log_sense import LOGSENSE, generate_report, generate_console_report
+from log_sense import LOGSENSE
+from utils import generate_report, generate_console_report
 
 def main():
     """Main function for CLI interface to LOG-SENSE."""
