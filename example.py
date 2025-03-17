@@ -47,7 +47,7 @@ test_logs = [
 log_path = test_logs[0]
 
 # Load the logs into memory
-with open(log_path, "r") as file:
+with open(log_path, "r", encoding="ISO-8859-1") as file:
     logs = file.readlines()
 
 # Start the analysis
@@ -67,7 +67,7 @@ try:
                                          # Process 20 log lines at a time
                                          chunk_size=20,
                                          # Limit to 100 lines for this example
-                                         limit=20,
+                                         limit=100,
                                          source_filename=log_path)
     
     
