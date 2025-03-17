@@ -177,11 +177,12 @@ class LOGSENSE:
                 prompt = self._to_prompt(formatted_logs, LogAnalysis)
 
                 try:
+                    # TODO: Disable TQDM output
                     resp = self.generator(prompt, max_tokens=self.token_max)
                     
                     # Set start and end line directly on the model fields
-                    resp.start_line = i
-                    resp.end_line = min(i + chunk_size - 1, len(logs) - 1)
+                    resp.start_line = i+1
+                    resp.end_line = min(i + chunk_size - 1, len(logs) - 1) + 1
                     results.append(resp)
                 except ValidationError as ve:
                     self.console.print(f"Pydantic validation error for batch starting at line {i}: {str(ve)}", style="bold red")
