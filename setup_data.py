@@ -6,6 +6,8 @@ import tarfile
 import io
 import argparse
 import sys
+import tempfile
+import shutil
 
 # Downlaod from LogHub
 ZENODO_BASE_URL = "https://zenodo.org/records/8196385/files/"
@@ -31,6 +33,7 @@ def download_logs(log_type, output_dir="logs"):
         print(f"Available log types: {', '.join(AVAILABLE_LOGS.keys())}")
         return False
     
+    # Create dir only if it does not exist
     os.makedirs(output_dir, exist_ok=True)
     
     # Add download parameter to URL
@@ -41,27 +44,26 @@ def download_logs(log_type, output_dir="logs"):
         response = requests.get(url)
         response.raise_for_status()
         
-       
-        print(f"Extracting logs to {output_dir}...")
-        with tarfile.open(fileobj=io.BytesIO(response.content), mode="r:gz") as tar_ref:
-            tar_ref.extractall(output_dir)
+        # Create a temporary directory for extraction
+        with tempfile.TemporaryDirectory() as temp_dir:
+            print(f"Extracting logs to temporary directory...")
+            with tarfile.open(fileobj=io.BytesIO(response.content), mode="r:gz") as tar_ref:
+                tar_ref.extractall(temp_dir)
+                
+            # Find log files in the temp directory
+            extracted_files = []
+            for root, _, files in os.walk(temp_dir):
+                for file in files:
+                    if file.endswith(".log"):
+                        extracted_files.append(os.path.join(root, file))
             
-        
-        extracted_files = []
-        for root, _, files in os.walk(output_dir):
-            for file in files:
-                extracted_files.append(os.path.join(root, file))
-        
-        
-        for file_path in extracted_files:
-            file = os.path.basename(file_path)
-            if file.endswith(".log"):
-                new_name = f"{log_type}.log"
-                os.rename(
-                    file_path,
-                    os.path.join(output_dir, new_name)
-                )
-                print(f"Logs saved as {os.path.join(output_dir, new_name)}")
+            # Move log files to output directory with appropriate names
+            destination_path = os.path.join(output_dir, f"{log_type}.log")
+            if extracted_files:
+                shutil.copy2(extracted_files[0], destination_path)
+                print(f"Logs saved as {destination_path}")
+            else:
+                print("No log files found in the downloaded archive.")
                 
         print(f"Successfully downloaded and extracted {log_type} logs!")
         return True
