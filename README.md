@@ -29,7 +29,7 @@ LOG-SENSE processes arbitrary logs in chunks, generating a comprehensive analysi
 - Python 3.11+
 - CUDA-enabled GPU (recommended for performance)
 
-## Installation
+## Getting started
 
 ### Clone the Repository
 
@@ -51,80 +51,16 @@ conda env create -f environment.yml
 conda activate log-sense-ai
 ```
 
-## Quick Start
+### Running
 
-You can check a quick start example in the `example.py` file. Here is a brief overview of the process:
-
-```python
-import outlines
-import torch
-from transformers import AutoTokenizer
-from log_sense import LOGSENSE, generate_report, generate_console_report
-
-# Configure model
-model_name = "Qwen/Qwen2.5-7B-Instruct"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = outlines.models.vllm(
-    model_name,
-    dtype="auto",
-    enable_prefix_caching=True,
-    disable_sliding_window=True,
-    gpu_memory_utilization=0.95,
-    enforce_eager=True, # disable cuda graph
-)
-
-# Load log file
-log_path = "data/logs/linux-example.log"
-with open(log_path, "r") as file:
-    logs = file.readlines()
-
-# Initialize analyzer and process logs
-logs_analyzer = LOGSENSE(
-    # Configure the model 
-    model=model,
-    # Configure the tokenizer
-    tokenizer=tokenizer,
-    # Set log type
-    log_type="linux server",
-    # Set maximum tokens for generation
-    token_max=32000,
-)
-
-# Analyze logs
-results = logs_analyzer.analyze_logs(
-    # Pass the logs to analyze
-    logs,
-    # Set the chunk size (number of log lines to process at once)
-    chunk_size=20,
-    # Set the maximum number of log lines to process
-    limit=100,
-    # Set the original log filename (for reporting)
-    source_filename=log_path
-)
-
-# Generate reports
-generate_console_report(results, logs, severity_levels=["critical", "error", "warning"])
-pdf_path = generate_report(
-    results,
-    output_path="reports",
-    filename="report.pdf",
-    severity_levels=["critical", "error", "warning"],
-    logs=logs
-)
-```
-
-## Command Line Interface
-
-LOG-SENSE includes a command-line interface for quick analysis of log files:
+Via CLI:
 
 ```bash
-python cli.py path/to/logfile.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --chunk-size 20 --limit 100
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server"
 ```
 
-### CLI Options
-
-- **Required positional argument**:
-  - Log file path: Path to the log file to analyze
+<details>
+<summary> CLI Options </summary>
 
 - **Model Configuration**:
   - `--model`, `-m`: Model to use for analysis (default: "Qwen/Qwen2.5-7B-Instruct")
@@ -143,25 +79,99 @@ python cli.py path/to/logfile.log --model Qwen/Qwen2.5-7B-Instruct --log-type "l
   - `--output-dir`: Directory to save PDF reports (default: "reports")
   - `--filename`: Filename for the PDF report (default: <log_file>_report.pdf)
 
-## Downloading Test Logs
+</details>
+<br>
 
-LOG-SENSE includes a utility script (`setup_data.py`) to download test log datasets from the [LogHub collection](https://zenodo.org/records/8196385):
+The output should look like this:
 
 ```bash
-# Download Linux logs (default)
-python setup_data.py
+LOG ANALYSIS REPORT - LINUX SERVER 
+Generated on: 2025-03-16 23:04:40
+Source: data/logs/linux-example.log
 
-# Download a specific log type
-python setup_data.py --log-type hadoop
 
-# List all available log types
-python setup_data.py --list
+LINES 0-19 ANALYSIS
 
-# Specify a custom output directory
-python setup_data.py --log-type apache --output-dir custom/path/logs
+Highest Severity: ERROR
+Requires Immediate Attention: YES
+
+KEY OBSERVATIONS:
+  • Multiple failed SSH login attempts from the same IP address. This could indicate a brute force attack.
+  • Multiple out-of-memory conditions leading to the termination of HTTPD processes. This could indicate a resource exhaustion attack or misconfiguration.
+
+DETECTED EVENTS:
+
+CRITICAL - Security Event
+
+Reasoning:  Multiple failed SSH login attempts from the same IP address. This could indicate a brute force attack.
+
+Recommended Action:  Implement rate limiting on SSH access, use a firewall to block the IP address, and monitor the system for further suspicious activity.                                        
+
+Related Log IDs: LOGID-4453d69a, LOGID-ccd22302, LOGID-2371b831, LOGID-bac785d3, LOGID-d70cb272, LOGID-68de42db                                                            
+
+Log Content                                                                   
+LOGID-4453d69a: Aug 29 07:22:24 combo sshd(pam_unix)[794]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                           
+LOGID-ccd22302: Aug 29 07:22:25 combo sshd(pam_unix)[796]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                              
+LOGID-2371b831: Aug 29 07:22:26 combo sshd(pam_unix)[798]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                              
+LOGID-bac785d3: Aug 29 07:22:26 combo sshd(pam_unix)[800]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                              
+LOGID-d70cb272: Aug 29 07:22:26 combo sshd(pam_unix)[801]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                              
+LOGID-68de42db: Aug 29 07:22:27 combo sshd(pam_unix)[802]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                                                                                                                                                                                                                             
+
 ```
 
-### Available Log Types
+Via Python 🐍: 
+
+You can check a quick start in the `example.py` file to how to use the `LOGSENSE` class. Here is a quick example:
+
+```python
+from logsense import LOGSENSE
+import outlines
+
+from transformers import AutoTokenizer
+
+# Load a model and tokenizer
+model_name = "Qwen/Qwen2.5-7B-Instruct"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+model = outlines.models.vllm(
+    model_name,
+    dtype="auto",
+    gpu_memory_utilization=0.95,
+    disable_sliding_window=True,
+    enable_prefix_caching=True,
+)
+
+# Create a LOGSENSE instance
+logs_analyzer = LOGSENSE(
+    model,                  # Outlines model instance
+    tokenizer,              # Tokenizer compatible with the model
+    log_type="linux server", # Type of logs being analyzed
+    token_max=32000,        # Maximum tokens for generation
+    prompt_template=None   # Optional custom prompt template
+)
+
+# Analyze logs with these parameters
+results = logs_analyzer.analyze_logs(
+    logs,                    # List of log lines
+    chunk_size=20,           # Number of log lines to process at once
+    limit=None,              # Maximum number of log lines to process
+    source_filename=None    # Original log filename (for reporting)
+)
+
+## Check the results
+print(results)
+```
+
+### Download Sample Logs (Optional)
+
+If you want to check LOGSENSE with some real-world sample logs, you can download them using the `setup_data.py` script:
+
+```bash
+python setup_data.py --log-type linux
+```
+
+#### Available Log Types
 
 - linux: Linux system logs
 - hadoop: Hadoop HDFS logs
@@ -175,7 +185,8 @@ python setup_data.py --log-type apache --output-dir custom/path/logs
 - proxifier: Proxifier software logs
 - openstack: OpenStack logs
 
-The downloaded logs will be extracted and renamed to `<log_type>.log` in the specified output directory (default: `data/logs`).
+
+> The downloaded logs will be extracted and renamed to `<log_type>.log` in the specified output directory (default: `data/logs`).
 
 ## LOGSENSE Parameters
 
