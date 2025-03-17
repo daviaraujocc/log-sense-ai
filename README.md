@@ -3,9 +3,9 @@
 
 ## About
 
-LOG-SENSE is a Proof-of-Concept (POC) AI-powered log analysis system designed to identify potential security issues, service errors, and performance problems in infrastructure logs. The system leverages structured generation techniques using Outlines (https://github.com/dottxt-ai/outlines) and Pydantic (https://docs.pydantic.dev/latest) to ensure consistent, strongly-typed output. 
+LOG-SENSE is a Proof-of-Concept (POC) AI-powered log analysis system designed to identify potential security issues, service errors, and performance problems in infrastructure logs. The system leverages structured generation techniques using Outlines (https://github.com/dottxt-ai/outlines) and Pydantic (https://docs.pydantic.dev/latest) on compatible LLM APIs/Engines to ensure consistent, strongly-typed output. 
 
-The system works by processing log files in manageable chunks, analyzing them using LLM models according to a prompt template, and generating structured JSON output based on a Pydantic schema. LOG-SENSE identifies potential security threats, performance bottlenecks, and system errors, categorizing them by severity levels and providing recommended actions for remediation, it's also capable of generating both console reports and PDF documentation for easy sharing and archiving.
+LOG-SENSE processes log files in smaller chunks, analyzes them with AI language models using predefined prompt templates, and generating structured JSON output based on a Pydantic schema.
 
 ## Features
 
@@ -17,7 +17,7 @@ The system works by processing log files in manageable chunks, analyzing them us
 - Provides specific recommended actions for each identified issue
 - Processes logs in manageable chunks for efficient analysis
 
-## Technologies
+## Libraries
 
 - [Outlines](https://github.com/dottxt-ai/outlines) for structured generation
 - [Pydantic](https://docs.pydantic.dev/latest) for strongly-typed output
@@ -27,7 +27,7 @@ The system works by processing log files in manageable chunks, analyzing them us
 ## Requirements
 
 - Python 3.11+
-- CUDA-enabled GPU (recommended for performance)
+- CUDA-enabled GPU (check if your GPU is CUDA-enabled [here](https://developer.nvidia.com/cuda-gpus))
 
 ## Getting started
 
@@ -56,32 +56,29 @@ conda activate log-sense-ai
 Via CLI:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --prompt-template prompt.txt
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --prompt-template prompt.txt --chunk-size 20 --limit 100
 ```
 
 <details>
 <summary> CLI Options </summary>
 
-- **Model Configuration**:
   - `--model`, `-m`: Model to use for analysis (default: "Qwen/Qwen2.5-7B-Instruct")
   - `--log-type`: Type of log being analyzed for LLM context (default: "server")
   - `--token-max`: Maximum token context size for processing (default: 32000)
   - `--gpu-mem-util`: GPU memory utilization (0.0 to 1.0) (default: 0.95)
   - `--max-model-len`: Maximum model length (optional)
-
-- **Analysis Configuration**:
+  - `--prompt-template`: Path to custom prompt template file (default: "prompt.txt")
   - `--chunk-size`: Number of log lines to process in each batch (default: 20)
-  - `--limit`: Limit the number of chunks to process (default: None)
-
-- **Output Configuration**:
-  - `--output`: Output format for the analysis results ("console" or "pdf") (default: "console")
+  - `--limit`: Limit the number of log lines to process (default: None)
+  - `--format`: Output format for the analysis results (choices: "console", "pdf", "json") (default: "console")
   - `--severity`: Severity levels to include in reports (choices: "critical", "error", "warning", "info") (default: ["critical", "error", "warning"])
-  - `--output-dir`: Directory to save PDF reports (default: "reports")
-  - `--filename`: Filename for the PDF report (default: <log_file>_report.pdf)
+  - `--output`, `-o`: Output location for PDF or JSON files (directory or full path) (default: "reports")
+  - `--filename`, `-f`: Filename for the output report (default: <log_file>_report.<ext>)
 
 </details>
 
-The output should look like this:
+<details>
+<summary> Expected Output </summary>
 
 ```bash
 LOG ANALYSIS REPORT - LINUX SERVER 
@@ -117,12 +114,21 @@ LOGID-d70cb272: Aug 29 07:22:26 combo sshd(pam_unix)[801]: authentication failur
 LOGID-68de42db: Aug 29 07:22:27 combo sshd(pam_unix)[802]: authentication failure; logname= uid=0 euid=0 tty=NODEVssh ruser= rhost=220.82.197.48  user=root                                                                                                                                                                                                                                             
 
 ```
+</details>
 
-To generate the pdf report, you can use the `--output pdf` option:
+To generate the pdf report, you can use the `--format pdf` option:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --output pdf --prompt-template prompt.txt
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --format pdf --prompt-template prompt.txt --chunk-size 20 --limit 100 --output reports
 ```
+
+For JSON output:
+
+```bash
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --format json --prompt-template prompt.txt --chunk-size 20 --limit 100 --output reports
+```
+
+Then check the `reports` directory for the generated reports.
 
 Via Python 🐍: 
 
@@ -201,7 +207,7 @@ The `LOGSENSE` class accepts the following parameters:
 logs_analyzer = LOGSENSE(
     model,                  # Outlines model instance
     tokenizer,              # Tokenizer compatible with the model
-    log_type="linux server", # Type of logs being analyzed
+    log_type="linux server", # Type of logs being analyzed, this has nothing to do with the code, it's just a context to help the model
     token_max=32000,        # Maximum tokens for generation
     prompt_template=None   # Optional custom prompt template
 )
@@ -273,7 +279,8 @@ Adjust these parameters to optimize performance and analysis quality:
 LOG-SENSE provides two output formats:
 
 1. Console reports with color-coded formatting for quick assessment
-2. PDF reports for documentation and sharing
+2. JSON output for structured data analysis and integration with other tools
+3. PDF reports for documentation and sharing
 
 ## Limitations
 
@@ -304,3 +311,6 @@ Common issues and solutions:
    - Reduce chunk_size for more detailed analysis
 
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
