@@ -7,6 +7,9 @@ import os
 from log_sense import LOGSENSE
 from utils import generate_report, generate_console_report
 
+# Disable logging for cleaner output
+os.environ["VLLM_LOGGING_LEVEL"] = "ERROR"
+
 # The model we're using
 model_name = "Qwen/Qwen2.5-7B-Instruct"
 
@@ -63,8 +66,8 @@ try:
     results = logs_analyzer.analyze_logs(logs,
                                          # Process 20 log lines at a time
                                          chunk_size=20,
-                                         # Limit to 30 chunks for this example
-                                         limit=100,
+                                         # Limit to 100 lines for this example
+                                         limit=20,
                                          source_filename=log_path)
     
     

@@ -12,6 +12,9 @@ from transformers import AutoTokenizer
 from log_sense import LOGSENSE
 from utils import generate_report, generate_console_report
 
+# Disable logging for cleaner output
+os.environ["VLLM_LOGGING_LEVEL"] = "ERROR"
+
 def main():
     """Main function for CLI interface to LOG-SENSE."""
     # Set up argument parser
@@ -52,6 +55,11 @@ def main():
         type=int,
         default=None,
         help="Maximum model length"
+    )
+    model_group.add_argument(
+        "--prompt-template",
+        default=None,
+        help="Path to prompt template file"
     )
     
     # Analysis parameters
@@ -133,7 +141,7 @@ def main():
                 enable_prefix_caching=True,
                 disable_sliding_window=True,
                 gpu_memory_utilization=args.gpu_mem_util,
-                enforce_eager=True,
+                enforce_eager=True
             )
         else:
             model = outlines.models.vllm(
@@ -143,7 +151,7 @@ def main():
                 disable_sliding_window=True,
                 gpu_memory_utilization=args.gpu_mem_util,
                 max_model_len=args.max_model_len,
-                enforce_eager=True,
+                enforce_eager=True
             )
 
     except Exception as e:
@@ -156,6 +164,7 @@ def main():
         logs_analyzer = LOGSENSE(
             model=model,
             tokenizer=tokenizer,
+            prompt_template_path=args.prompt_template,
             log_type=f"{args.log_type}",
             token_max=args.token_max,
         )
