@@ -56,7 +56,7 @@ conda activate log-sense-ai
 Via CLI:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server"
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --prompt-template prompt.txt
 ```
 
 <details>
@@ -80,7 +80,6 @@ python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log
   - `--filename`: Filename for the PDF report (default: <log_file>_report.pdf)
 
 </details>
-<br>
 
 The output should look like this:
 
@@ -119,12 +118,18 @@ LOGID-68de42db: Aug 29 07:22:27 combo sshd(pam_unix)[802]: authentication failur
 
 ```
 
+To generate the pdf report, you can use the `--output pdf` option:
+
+```bash
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --output pdf --prompt-template prompt.txt
+```
+
 Via Python 🐍: 
 
 You can check a quick start in the `example.py` file to how to use the `LOGSENSE` class. Here is a quick example:
 
 ```python
-from logsense import LOGSENSE
+from log_sense import LOGSENSE
 import outlines
 
 from transformers import AutoTokenizer
@@ -165,7 +170,7 @@ print(results)
 
 ### Download Sample Logs (Optional)
 
-If you want to check LOGSENSE with some real-world sample logs, you can download them using the `setup_data.py` script:
+If you want to test LOGSENSE with some real-world sample logs, you can download them using the `setup_data.py` script:
 
 ```bash
 python setup_data.py --log-type linux
