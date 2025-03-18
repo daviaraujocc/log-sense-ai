@@ -1,5 +1,6 @@
 # LOG-SENSE - AI-Powered Log Analysis System
 
+https://img.shields.io/badge/Project%20Status-POC-green.svg
 
 ## About
 
@@ -28,6 +29,10 @@ LOG-SENSE processes log files in smaller chunks, analyzes them with AI language 
 
 - Python 3.11+
 - CUDA-enabled GPU (check if your GPU is CUDA-enabled [here](https://developer.nvidia.com/cuda-gpus))
+- CUDA 12.1+ and compatible drivers
+- Minimum 10GB GPU memory recommended (8GB may work with smaller models)
+- 16GB RAM or higher recommended
+- Operating Systems: Ubuntu 20.04+, Windows 10/11 with WSL2, macOS 12+ (Apple Silicon with MPS)
 
 ## Getting started
 
@@ -56,7 +61,9 @@ conda activate log-sense-ai
 Via CLI:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --prompt-template prompt.txt --chunk-size 20 --limit 100
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct \ 
+--log-type "linux server" --prompt-template prompt.txt \ 
+--chunk-size 20 --limit 100
 ```
 
 <details>
@@ -119,13 +126,17 @@ LOGID-68de42db: Aug 29 07:22:27 combo sshd(pam_unix)[802]: authentication failur
 To generate the pdf report, you can use the `--format pdf` option:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --format pdf --prompt-template prompt.txt --chunk-size 20 --limit 100 --output reports
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct \ 
+--log-type "linux server" --format pdf --prompt-template prompt.txt \
+--chunk-size 20 --limit 100 --output reports
 ```
 
 For JSON output:
 
 ```bash
-python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct --log-type "linux server" --format json --prompt-template prompt.txt --chunk-size 20 --limit 100 --output reports
+python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct \ 
+--log-type "linux server" --format json --prompt-template prompt.txt \ 
+--chunk-size 20 --limit 100 --output reports
 ```
 
 Then check the `reports` directory for the generated reports.
@@ -250,6 +261,27 @@ The default prompt template is configured in `prompt.txt`. The template must inc
 - `{model_schema}`: JSON schema for the output
 - `{logs}`: The log entries to analyze
 
+#### Example Prompt Template
+
+```txt
+You are an expert security analyst specializing in {log_type} analysis.
+Your task is to analyze the following log entries and identify potential security issues,
+service errors, or performance problems.
+
+Please provide a structured analysis using the following JSON schema:
+{model_schema}
+
+Log entries to analyze:
+
+<LOGS>
+
+{logs}
+
+</LOGS>
+
+The analysis should focus on detecting patterns, anomalies, and potential security threats.
+```
+
 ## Advanced Usage
 
 ### Customizing the Model
@@ -278,7 +310,7 @@ Adjust these parameters to optimize performance and analysis quality:
 
 LOG-SENSE provides two output formats:
 
-1. Console reports with color-coded formatting for quick assessment
+1. Console reports for quick assessment
 2. JSON output for structured data analysis and integration with other tools
 3. PDF reports for documentation and sharing
 
@@ -292,23 +324,26 @@ LOG-SENSE provides two output formats:
 
 ## Troubleshooting
 
-Common issues and solutions:
-
 1. **Out of Memory Errors**
    - Reduce chunk_size
    - Lower max_model_len
+   - Use a smaller model
    - Increase gpu_memory_utilization
 
 2. **Slow Processing**
    - Increase chunk_size
    - Use a smaller model
-   - Enable prefix caching
 
-3. **Poor Analysis Quality Or Validation Errors**
+3. **Poor Analysis Quality**
    - Try a different model
    - Adjust prompt template
    - Adjust token_max value
    - Reduce chunk_size for more detailed analysis
+
+4. **JSON Validation Failures**
+   - Reduce chunk_size
+   - Increase token_max
+   - Try a model with better instruction following capabilities
 
 
 ## License
