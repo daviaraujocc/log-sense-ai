@@ -1,3 +1,34 @@
+"""
+LogSense: AI-Powered Log Analysis Framework
+==========================================
+
+LogSense uses AI language models to quickly analyze log files, identify critical issues,
+and provide actionable recommendations. It automatically detects errors, security threats,
+performance bottlenecks, and other system anomalies.
+
+Basic Usage:
+-----------
+```python
+# Initialize
+from log_sense import LOGSENSE
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.2")
+
+analyzer = LOGSENSE(model, tokenizer, log_type="nginx", token_max=2048)
+
+# Analyze logs
+with open("logs.txt") as f:
+    logs = f.readlines()
+    
+results = analyzer.analyze_logs(logs, chunk_size=20)
+
+# Process results
+print(results.model_dump_json(indent=2))
+```
+"""
+
 import outlines
 from pydantic import BaseModel, Field, ValidationError
 from typing import Optional, Dict, List
@@ -6,6 +37,7 @@ import hashlib
 from rich.console import Console
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
 import os
+
 
 def format_logs_with_id(log_entries):
     """Format log entries with LogID prefixes and return formatted logs along with ID mapping."""
@@ -28,7 +60,7 @@ def format_logs_with_id(log_entries):
 
 
 class SeverityLevel(str, Enum):
-    """The severity levels for log events."""
+    """The severity levels for log events.""" 
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
@@ -84,14 +116,14 @@ class AnalysisResults(BaseModel):
     log_type: str
     
     def requires_attention(self) -> bool:
-        """Check if any analysis requires immediate attention."""
+        """Check if any analysis requires immediate attention.""" 
         for analysis in self.results:
             if analysis and analysis.requires_immediate_attention:
                 return True
         return False
     
     def highest_severity(self) -> Optional[SeverityLevel]:
-        """Return the highest severity level found across all analyses."""
+        """Return the highest severity level found across all analyses.""" 
         highest = None
         severity_order = {
             SeverityLevel.CRITICAL: 3,
@@ -185,10 +217,10 @@ class LOGSENSE:
                     resp.end_line = min(i + chunk_size - 1, len(logs) - 1) + 1
                     results.append(resp)
                 except ValidationError as ve:
-                    self.console.print(f"Pydantic validation error for batch starting at line {i}: {str(ve)}", style="bold red")
+                    self.console.print(f"\n Pydantic validation error for batch starting at line {i}: {str(ve)}", style="bold red")
                     results.append(None)  
                 except Exception as e:
-                    self.console.print(f"Generation failed for batch starting at line {i}: {str(e)}", style="bold red")
+                    self.console.print(f"\n Generation failed for batch starting at line {i}: {str(e)}", style="bold red")
                     self.console.print("Exiting...", style="bold red")
                     os._exit(1)
                 
