@@ -22,4 +22,8 @@ Output should be valid JSON conforming to the following schema:
 
 Logs for analysis:
 
+<LOGS>
+
 {logs}
+
+</LOGS>
