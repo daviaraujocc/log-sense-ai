@@ -6,19 +6,70 @@
 
 LOG-SENSE is a Proof-of-Concept (POC) AI-powered log analysis system designed to identify potential security issues, service errors, and performance problems in infrastructure logs. The system leverages structured generation techniques using Outlines (https://github.com/dottxt-ai/outlines) and Pydantic (https://docs.pydantic.dev/latest) on compatible LLM APIs/Engines to ensure consistent, strongly-typed output. 
 
-LOG-SENSE processes log files in smaller chunks, analyzes them with AI language models using predefined prompt templates, and generating structured JSON output based on a Pydantic schema.
-
 ## Features
 
+- Analyzes logs using large language models (LLMs) for context-aware insights
 - Produces strongly-typed JSON output using [Outlines](https://github.com/dottxt-ai/outlines)
-- Analyzes logs with varying degrees of confidence
 - Categorizes events by type (security, performance, configuration, etc.)
 - Assigns severity levels (critical, error, warning, info)
-- Generates both console reports and PDF documentation
+- Generates reports in console, PDF, and JSON formats
 - Provides specific recommended actions for each identified issue
 - Processes logs in manageable chunks for efficient analysis
 
-## Libraries
+## Table of contents
+
+<details>
+<summary> Click to Expand </summary>
+
+- [How it works](#how-it-works)
+- [Tech stacks](#tech-stacks)
+- [Requirements](#requirements)
+- [Getting started](#getting-started)
+  - [Clone the Repository](#clone-the-repository)
+  - [Install Dependencies](#install-dependencies)
+  - [Running](#running)
+  - [Download Sample Logs (Optional)](#download-sample-logs-optional)
+    - [Available Log Types](#available-log-types)
+- [LOGSENSE Parameters](#logsense-parameters)
+  - [LOGSENSE Methods](#logsense-methods)
+- [Configuration](#configuration)
+    - [Schema](#schema)
+    - [Prompt Template](#prompt-template)
+        - [Example Prompt Template](#example-prompt-template)
+- [Advanced Usage](#advanced-usage)
+    - [Customizing the Model](#customizing-the-model)
+    - [Processing Options](#processing-options)
+    - [Output Formats](#output-formats)
+- [Limitations](#limitations)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+</details>
+
+
+## How it works
+
+Here's how LOG-SENSE makes sense of your log data:
+
+1. It will split your large log files into smaller pieces (usually 20 lines each) so they're easier to analyze and don't overwhelm the AI window context.
+
+2. Every log line gets its own unique ID (like LOGID-xxxxxxx) based on a hash md5, making it easy to point to specific logs when explaining problems.
+
+3. The system examines each chunk of logs using:
+   - A prompt template containing the logs and the instructions that tell the AI what to look for
+   - A large language model (LLM) that understands the context of your logs and can generate structured data
+
+4. All issues get categorized by:
+   - How serious they are (from critical emergencies to just FYI information)
+   - What type of problem it is (security threat, system error, performance bottleneck, etc.)
+   - What's happening and what you should do about it
+
+5. The findings are delivered in formats that work for you:
+   - Instant on-screen results 
+   - PDF reports for sharing with your team or management
+   - Structured data (JSON) for feeding into other analysis tools
+
+## Tech stacks
 
 - [Outlines](https://github.com/dottxt-ai/outlines) for structured generation
 - [Pydantic](https://docs.pydantic.dev/latest) for strongly-typed output
@@ -28,11 +79,10 @@ LOG-SENSE processes log files in smaller chunks, analyzes them with AI language 
 ## Requirements
 
 - Python 3.11+
-- CUDA-enabled GPU (check if your GPU is CUDA-enabled [here](https://developer.nvidia.com/cuda-gpus))
-- CUDA 12.1+ and compatible drivers
+- CUDA 12.1+ and compatible drivers (check if your GPU is CUDA-enabled [here](https://developer.nvidia.com/cuda-gpus))
 - Minimum 10GB GPU memory recommended (8GB may work with smaller models)
 - 16GB RAM or higher recommended
-- Operating Systems: Ubuntu 20.04+, Windows 10/11 with WSL2, macOS 12+ (Apple Silicon with MPS)
+- Operating Systems: Ubuntu 20.04+, Windows 10/11 with WSL2
 
 ## Getting started
 
@@ -87,7 +137,7 @@ python cli.py data/logs/linux-example.log --model Qwen/Qwen2.5-7B-Instruct \
 <details>
 <summary> Expected Output </summary>
 
-```bash
+```console
 LOG ANALYSIS REPORT - LINUX SERVER 
 Generated on: 2025-03-16 23:04:40
 Source: data/logs/linux-example.log
@@ -182,7 +232,8 @@ results = logs_analyzer.analyze_logs(
 )
 
 ## Check the results
-print(results)
+for analysis in results.results:
+    print(analysis.model_dump_json(indent=2))
 ```
 
 ### Download Sample Logs (Optional)
@@ -296,6 +347,8 @@ model = outlines.models.vllm(
     gpu_memory_utilization=0.95, 
 )
 ```
+
+> Instruct and Coder models are highly recommended for structured data generation.
 
 ### Processing Options
 
