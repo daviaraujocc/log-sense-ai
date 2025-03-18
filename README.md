@@ -1,6 +1,6 @@
 # LOG-SENSE - AI-Powered Log Analysis System
 
-https://img.shields.io/badge/Project%20Status-POC-green.svg
+<img src="https://img.shields.io/badge/Project%20Status-POC-green.svg"/>
 
 ## About
 
