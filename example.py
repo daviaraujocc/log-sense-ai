@@ -1,17 +1,16 @@
 import outlines
-import torch
 from transformers import AutoTokenizer
-import json
 import os
-
 from log_sense import LOGSENSE
-from utils import generate_report, generate_console_report
 
-# Disable logging for cleaner output
+# Improve logging for cleaner output
 os.environ["VLLM_LOGGING_LEVEL"] = "ERROR"
 
 # The model we're using
 model_name = "Qwen/Qwen2.5-7B-Instruct"
+
+# The template for the prompt
+prompt_template_path = "prompt.txt"
 
 # The type of logs we're analyzing
 log_type = "linux server"
@@ -29,11 +28,15 @@ model = outlines.models.vllm(
     # Speeds up repeated prompt prefixes
     enable_prefix_caching=True,
     
-    # So prefix caching can be used
+    # Enable so prefix caching can be used
     disable_sliding_window=True,
     
     # Use most of the available GPU memory
     gpu_memory_utilization=0.95,
+
+    # Maximum length of the model
+    # Change this value if you have more GPU memory
+    max_model_len=20000,
     
     # Disable CUDA Graph for less resource usage
     enforce_eager=True,
@@ -57,39 +60,18 @@ try:
         model=model,
         tokenizer=tokenizer,
         log_type=log_type,
-        
-        # Maximum context window size for processing
-        token_max=32000,
+        token_max=32000, # Maximum context window size for processing
+        prompt_template_path=prompt_template_path,
     )
     
     # Analyze the logs
-    results = logs_analyzer.analyze_logs(logs,
-                                         # Process 20 log lines at a time
-                                         chunk_size=20,
-                                         # Limit to 100 lines for this example
-                                         limit=100,
-                                         source_filename=log_path)
+    results = logs_analyzer.analyze_logs(logs,   
+                                         chunk_size=20, # Process 20 log lines at a time
+                                         limit=100 # Limit to 100 lines for this example
+                                         )
     
     
-    # Generate a console report with the most important findings
-    generate_console_report(results, 
-                            logs, 
-                            severity_levels=["critical", "error", "warning"]
-                            )
-    
-    # Generate a PDF summary with all the findings organized by severity
-    pdf_path = generate_report(results,
-        output_path="reports",
-        filename="report.pdf",
-
-        # Focus on the most important issues
-        severity_levels=["critical", "error", "warning"],
-        # Include the original logs in the report to retrieve context
-        logs=logs
-    )
-
-
-    print(f"Report generated at: {pdf_path}")
+    print(results.model_dump_json(indent=2))
         
 except Exception as e:
     print(f"Error during analysis: {str(e)}")
