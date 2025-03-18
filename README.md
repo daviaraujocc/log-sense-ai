@@ -69,7 +69,7 @@ Here's how LOG-SENSE makes sense of your log data:
    - PDF reports for sharing with your team or management
    - Structured data (JSON) for feeding into other analysis tools
 
-## Tech stacks
+## 🛠️ Tech stacks
 
 - [Outlines](https://github.com/dottxt-ai/outlines) for structured generation
 - [Pydantic](https://docs.pydantic.dev/latest) for strongly-typed output
@@ -84,7 +84,7 @@ Here's how LOG-SENSE makes sense of your log data:
 - 16GB RAM or higher recommended
 - Operating Systems: Ubuntu 20.04+, Windows 10/11 with WSL2
 
-## Getting started
+## 🚀 Getting started
 
 ### Clone the Repository
 
